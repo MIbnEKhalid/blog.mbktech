@@ -1,0 +1,129 @@
+/* Dashboard Notification System */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 10000;
+    animation: slideInNotification 0.3s ease;
+    max-width: 400px;
+    font-weight: 500;
+    border-left: 4px solid #1e7e34;
+}
+
+.notification-error {
+    background: #dc3545;
+    border-left-color: #c82333;
+}
+
+.notification-warning {
+    background: #ffc107;
+    color: #212529;
+    border-left-color: #e0a800;
+}
+
+.notification-info {
+    background: #17a2b8;
+    border-left-color: #138496;
+}
+
+.notification .notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.notification .notification-icon {
+    font-size: 1.1rem;
+}
+
+.notification .notification-close {
+    background: none;
+    border: none;
+    color: inherit;
+    margin-left: auto;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.notification .notification-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideInNotification {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutNotification {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* Loading button states */
+.btn-loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .notification {
+        top: 5px;
+        right: 5px;
+        left: 5px;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+    }
+}

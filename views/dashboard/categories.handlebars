@@ -212,14 +212,89 @@
     document.getElementById('postFilter').addEventListener('change', filterAndSortCategories);
     document.getElementById('sortFilter').addEventListener('change', filterAndSortCategories);
 
+    // Helper functions for notifications
+    function showNotification(message, type = 'success') {
+        // Remove existing notifications
+        const existing = document.querySelector('.notification');
+        if (existing) existing.remove();
+        
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#28a745' : '#dc3545'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+            font-weight: 500;
+        `;
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; margin-left: auto; cursor: pointer; font-size: 1.2rem;">&times;</button>
+            </div>
+        `;
+        
+        // Add animation keyframes if not already present
+        if (!document.querySelector('#notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => notification.remove(), 300);
+            }
+        }, 5000);
+    }
+
+    function setLoading(button, isLoading) {
+        const originalText = button.dataset.originalText || button.textContent;
+        if (!button.dataset.originalText) {
+            button.dataset.originalText = originalText;
+        }
+        
+        if (isLoading) {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        } else {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    }
+
     document.getElementById('categoryForm').addEventListener('submit', async function (e) {
         e.preventDefault();
         const nameInput = document.getElementById('categoryName');
         const descInput = document.getElementById('categoryDescription');
+        const submitBtn = this.querySelector('button[type="submit"]');
         const name = nameInput.value.trim();
         const description = descInput.value.trim();
 
-        if (!name) return;
+        if (!name) {
+            showNotification('Category name is required', 'error');
+            return;
+        }
+
+        setLoading(submitBtn, true);
 
         try {
             const response = await fetch('/dashboard/api/categories', {
@@ -228,15 +303,20 @@
                 body: JSON.stringify({ name, description }),
             });
             const data = await response.json();
+            
             if (data.success) {
-                // Optimistically add to UI or just reload
-                window.location.reload();
+                showNotification('Category added successfully!');
+                nameInput.value = '';
+                descInput.value = '';
+                setTimeout(() => window.location.reload(), 1500);
             } else {
-                alert(data.error || 'Failed to add category');
+                showNotification(data.error || 'Failed to add category', 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('An error occurred.');
+            showNotification('Network error occurred. Please try again.', 'error');
+        } finally {
+            setLoading(submitBtn, false);
         }
     });
 
@@ -252,10 +332,16 @@
     async function saveCategory(id) {
         const nameInput = document.getElementById(`edit-${id}`);
         const descInput = document.getElementById(`edit-desc-${id}`);
+        const saveBtn = document.querySelector(`.save-btn-${id}`);
         const name = nameInput.value.trim();
         const description = descInput.value.trim();
 
-        if (!name) return;
+        if (!name) {
+            showNotification('Category name is required', 'error');
+            return;
+        }
+
+        setLoading(saveBtn, true);
 
         try {
             const response = await fetch(`/dashboard/api/categories/${id}`, {
@@ -264,34 +350,49 @@
                 body: JSON.stringify({ name, description }),
             });
             const data = await response.json();
+            
             if (data.success) {
                 document.getElementById(`name-${id}`).textContent = name;
                 document.getElementById(`desc-${id}`).textContent = description;
                 toggleEdit(id);
+                showNotification('Category updated successfully!');
             } else {
-                alert(data.error || 'Failed to update category');
+                showNotification(data.error || 'Failed to update category', 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('An error occurred.');
+            showNotification('Network error occurred. Please try again.', 'error');
+        } finally {
+            setLoading(saveBtn, false);
         }
     }
 
     async function deleteCategory(id) {
         if (confirm('Are you sure you want to delete this category? This will remove the category from all associated posts.')) {
+            const deleteBtn = document.querySelector(`button[onclick="deleteCategory(${id})"]`);
+            setLoading(deleteBtn, true);
+
             try {
                 const response = await fetch(`/dashboard/api/categories/${id}`, {
                     method: 'DELETE',
                 });
                 const data = await response.json();
+                
                 if (data.success) {
-                    document.getElementById(`row-${id}`).remove();
+                    showNotification('Category deleted successfully!');
+                    // Add fade out animation before removing
+                    const row = document.getElementById(`row-${id}`);
+                    row.style.transition = 'opacity 0.3s ease';
+                    row.style.opacity = '0';
+                    setTimeout(() => row.remove(), 300);
                 } else {
-                    alert(data.error || 'Failed to delete category');
+                    showNotification(data.error || 'Failed to delete category', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('An error occurred.');
+                showNotification('Network error occurred. Please try again.', 'error');
+            } finally {
+                setLoading(deleteBtn, false);
             }
         }
     }

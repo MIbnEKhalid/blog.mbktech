@@ -6,6 +6,8 @@ import { marked } from 'marked';
 import Prism from 'prismjs';
 import { JSDOM } from 'jsdom';
 import DOMPurify from 'dompurify';
+import { downloadFile } from './pool.js';
+import rateLimit from 'express-rate-limit';
 
 // Configure marked with syntax highlighting
 marked.setOptions({
@@ -30,7 +32,7 @@ const limit = 10; // Posts per page
 router.get('/', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        
+
         const offset = (page - 1) * limit;
 
         let whereClause = "WHERE p.status = 'published'";
@@ -172,7 +174,7 @@ router.get('/author/:username', async (req, res) => {
     try {
         const { username } = req.params;
         const page = parseInt(req.query.page) || 1;
-        
+
         const offset = (page - 1) * limit;
 
         let whereClause = "WHERE p.status = 'published' AND p.\"UserName\" = $1";
@@ -247,7 +249,7 @@ router.get('/category/:categoryName', async (req, res) => {
     try {
         const { categoryName } = req.params;
         const page = parseInt(req.query.page) || 1;
-        
+
         const offset = (page - 1) * limit;
 
         const category = await pool.query(
@@ -324,7 +326,7 @@ router.get('/tag/:tagName', async (req, res) => {
     try {
         const { tagName } = req.params;
         const page = parseInt(req.query.page) || 1;
-        
+
         const offset = (page - 1) * limit;
 
         const tag = await pool.query(
@@ -694,6 +696,92 @@ router.get('/bookmarks', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).render('error.handlebars', { message: 'Server error', code: 500 });
+    }
+});
+
+const imgLimiter = rateLimit({
+    windowMs: 2 * 60 * 1000, // 2 minutes
+    max: 25, // limit each IP to 25 requests per windowMs
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    handler: (req, res) => {
+        res.status(429).render('error.handlebars', { message: 'Too many requests from your IP. Try again later.', code: 429 });
+    }
+});
+
+// Public route to view images from R2 bucket
+router.get('/images/:key(*)', imgLimiter, async (req, res) => {
+    const referer = req.get('Referer');
+    const allowedDomains = ['mbktechstudio.com', 'mbktech.org', 'localhost'];
+
+    if (referer && !allowedDomains.some(domain => referer.includes(domain))) {
+        return res.status(403).send('Hotlinking not allowed');
+    }
+    try {
+        const key = req.params.key;
+        if (!key) {
+            return res.status(400).send('Image key is required');
+        }
+
+        // Validate that it's an image file
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+        const hasImageExtension = imageExtensions.some(ext =>
+            key.toLowerCase().endsWith(ext)
+        );
+
+        if (!hasImageExtension) {
+            return res.status(400).send('Only image files are allowed');
+        }
+
+        // Download file from R2
+        const result = await downloadFile(key);
+
+        // Convert the readable stream to buffer
+        const chunks = [];
+        for await (const chunk of result.Body) {
+            chunks.push(chunk);
+        }
+        const buffer = Buffer.concat(chunks);
+
+        // Set appropriate headers for public image serving
+        res.set({
+            'Content-Type': result.ContentType || 'image/jpeg',
+            'Content-Length': result.ContentLength,
+            'Cache-Control': 'public, max-age=31536000, immutable', // 1 year cache
+            'Last-Modified': result.LastModified,
+            'ETag': result.ETag,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET',
+            'Access-Control-Allow-Headers': 'Content-Type'
+        });
+
+        // Handle conditional requests for better performance
+        const ifNoneMatch = req.headers['if-none-match'];
+        if (ifNoneMatch && ifNoneMatch === result.ETag) {
+            return res.status(304).send();
+        }
+
+        const ifModifiedSince = req.headers['if-modified-since'];
+        if (ifModifiedSince && result.LastModified) {
+            const modifiedDate = new Date(result.LastModified);
+            const requestDate = new Date(ifModifiedSince);
+            if (modifiedDate <= requestDate) {
+                return res.status(304).send();
+            }
+        }
+
+        res.send(buffer);
+
+    } catch (err) {
+        console.error('Image serving error:', err);
+
+        if (err.message.includes('File not found')) {
+            res.status(404).send('Image not found');
+        } else if (err.message.includes('Access denied')) {
+            res.status(403).send('Access denied');
+        } else {
+            res.status(500).send('Failed to load image');
+        }
     }
 });
 

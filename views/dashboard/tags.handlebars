@@ -230,10 +230,79 @@
     document.getElementById('postFilter').addEventListener('change', filterAndSortTags);
     document.getElementById('sortFilter').addEventListener('change', filterAndSortTags);
 
+    // Helper functions for notifications
+    function showNotification(message, type = 'success') {
+        const existing = document.querySelector('.notification');
+        if (existing) existing.remove();
+        
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#28a745' : '#dc3545'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+            font-weight: 500;
+        `;
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; margin-left: auto; cursor: pointer; font-size: 1.2rem;">&times;</button>
+            </div>
+        `;
+        
+        if (!document.querySelector('#notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => notification.remove(), 300);
+            }
+        }, 5000);
+    }
+
+    function setLoading(button, isLoading) {
+        const originalText = button.dataset.originalText || button.textContent;
+        if (!button.dataset.originalText) {
+            button.dataset.originalText = originalText;
+        }
+        
+        if (isLoading) {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        } else {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    }
+
     // Add new tag
     document.getElementById('tagForm').addEventListener('submit', async function (e) {
         e.preventDefault();
-        const name = document.getElementById('tagName').value;
+        const nameInput = document.getElementById('tagName');
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const name = nameInput.value.trim();
+
+        if (!name) {
+            showNotification('Tag name is required', 'error');
+            return;
+        }
+
+        setLoading(submitBtn, true);
 
         try {
             const response = await fetch('/dashboard/api/tags', {
@@ -246,13 +315,17 @@
 
             const data = await response.json();
             if (data.success) {
-                window.location.reload();
+                showNotification('Tag added successfully!');
+                nameInput.value = '';
+                setTimeout(() => window.location.reload(), 1500);
             } else {
-                alert(data.error || 'Failed to add tag');
+                showNotification(data.error || 'Failed to add tag', 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('An error occurred while adding the tag');
+            showNotification('Network error occurred. Please try again.', 'error');
+        } finally {
+            setLoading(submitBtn, false);
         }
     });
 
@@ -271,7 +344,16 @@
 
     // Save tag changes
     async function saveTag(id) {
-        const name = document.getElementById(`edit-${id}`).value;
+        const nameInput = document.getElementById(`edit-${id}`);
+        const saveBtn = document.querySelector(`.save-btn-${id}`);
+        const name = nameInput.value.trim();
+
+        if (!name) {
+            showNotification('Tag name is required', 'error');
+            return;
+        }
+
+        setLoading(saveBtn, true);
 
         try {
             const response = await fetch(`/dashboard/api/tags/${id}`, {
@@ -284,13 +366,16 @@
 
             const data = await response.json();
             if (data.success) {
-                window.location.reload();
+                showNotification('Tag updated successfully!');
+                setTimeout(() => window.location.reload(), 1500);
             } else {
-                alert(data.error || 'Failed to update tag');
+                showNotification(data.error || 'Failed to update tag', 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('An error occurred while updating the tag');
+            showNotification('Network error occurred. Please try again.', 'error');
+        } finally {
+            setLoading(saveBtn, false);
         }
     }
 
@@ -300,6 +385,9 @@
             return;
         }
 
+        const deleteBtn = event.target.closest('button');
+        setLoading(deleteBtn, true);
+
         try {
             const response = await fetch(`/dashboard/api/tags/${id}`, {
                 method: 'DELETE'
@@ -307,13 +395,16 @@
 
             const data = await response.json();
             if (data.success) {
-                window.location.reload();
+                showNotification('Tag deleted successfully!');
+                setTimeout(() => window.location.reload(), 1500);
             } else {
-                alert(data.error || 'Failed to delete tag');
+                showNotification(data.error || 'Failed to delete tag', 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('An error occurred while deleting the tag');
+            showNotification('Network error occurred. Please try again.', 'error');
+        } finally {
+            setLoading(deleteBtn, false);
         }
     }
 

@@ -3,9 +3,89 @@ import { pool } from './pool.js';
 import { marked } from 'marked';
 import Prism from 'prismjs';
 import multer from 'multer';
+import crypto from 'crypto';
+import path from 'path';
+import rateLimit from 'express-rate-limit';
+import { uploadFile, downloadFile, deleteFile, deleteFiles, listfiles, getFileMetadata, fileExists, checkR2Health, generateSignedUrl } from './pool.js';
 
-// Configure multer for form data parsing
-const upload = multer();
+// File signature validation for images
+const IMAGE_SIGNATURES = {
+    'image/jpeg': [[0xFF, 0xD8, 0xFF]],
+    'image/png': [[0x89, 0x50, 0x4E, 0x47]],
+    'image/gif': [[0x47, 0x49, 0x46, 0x38, 0x37, 0x61], [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]],
+    'image/webp': [[0x52, 0x49, 0x46, 0x46]],
+    'image/svg+xml': [[0x3C, 0x3F, 0x78, 0x6D], [0x3C, 0x73, 0x76, 0x67]] // <?xml or <svg
+};
+
+// Validate file signature against declared MIME type
+function validateFileSignature(buffer, mimeType) {
+    const signatures = IMAGE_SIGNATURES[mimeType];
+    if (!signatures) return false;
+    
+    return signatures.some(signature => {
+        return signature.every((byte, index) => buffer[index] === byte);
+    });
+}
+
+// Generate secure filename
+function generateSecureFilename(originalname) {
+    const ext = path.extname(originalname).toLowerCase();
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    
+    if (!allowedExtensions.includes(ext)) {
+        throw new Error('Invalid file extension');
+    }
+    
+    const randomName = crypto.randomUUID();
+    return `blog-images/${randomName}${ext}`;
+}
+
+// Upload rate limiter - stricter for file uploads
+const uploadRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 uploads per IP per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many upload requests. Please try again later.' },
+    handler: (req, res) => {
+        res.status(429).json({ error: 'Too many upload requests. Please try again later.' });
+    }
+});
+
+// Configure multer with disk storage and enhanced validation
+const upload = multer({ 
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, '/tmp'); // Use temp directory
+        },
+        filename: (req, file, cb) => {
+            try {
+                const filename = generateSecureFilename(file.originalname);
+                cb(null, path.basename(filename));
+            } catch (error) {
+                cb(error);
+            }
+        }
+    }),
+    limits: {
+        fileSize: 20 * 1024 * 1024, // 20MB limit (consistent with client)
+        files: 1 // Only one file per request
+    },
+    fileFilter: (req, file, cb) => {
+        // Validate MIME type
+        const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+        if (!allowedMimes.includes(file.mimetype)) {
+            return cb(new Error('Invalid file type. Only JPEG, PNG, GIF, WebP, and SVG images are allowed.'), false);
+        }
+        
+        // Validate filename
+        if (!file.originalname || file.originalname.length > 255) {
+            return cb(new Error('Invalid filename'), false);
+        }
+        
+        cb(null, true);
+    }
+});
 
 // Configure marked with syntax highlighting
 marked.setOptions({
@@ -20,9 +100,6 @@ marked.setOptions({
 });
 
 const router = express.Router();
-
-// Middleware to parse FormData for all routes in this module
-router.use(upload.none());
 
 // Dashboard home
 router.get('/', async (req, res) => {
@@ -347,16 +424,17 @@ router.post('/api/posts', async (req, res) => {
         if (tags) {
             const tagArray = JSON.parse(tags);
             for (const tagName of tagArray) {
+                const normalizedTagName = tagName.toLowerCase().trim();
                 // Get or create tag
                 let tagResult = await client.query(
                     'SELECT id FROM Tags WHERE name = $1',
-                    [tagName]
+                    [normalizedTagName]
                 );
 
                 if (tagResult.rows.length === 0) {
                     tagResult = await client.query(
                         'INSERT INTO Tags (name) VALUES ($1) RETURNING id',
-                        [tagName]
+                        [normalizedTagName]
                     );
                 }
 
@@ -443,16 +521,17 @@ router.put('/api/posts/:id', async (req, res) => {
         if (tags) {
             const tagArray = JSON.parse(tags);
             for (const tagName of tagArray) {
+                const normalizedTagName = tagName.toLowerCase().trim();
                 // Get or create tag
                 let tagResult = await client.query(
                     'SELECT id FROM Tags WHERE name = $1',
-                    [tagName]
+                    [normalizedTagName]
                 );
 
                 if (tagResult.rows.length === 0) {
                     tagResult = await client.query(
                         'INSERT INTO Tags (name) VALUES ($1) RETURNING id',
-                        [tagName]
+                        [normalizedTagName]
                     );
                 }
 
@@ -480,15 +559,28 @@ router.delete('/api/posts/:id', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+        
+        // Check if post exists
+        const postCheck = await client.query('SELECT id FROM posts WHERE id = $1', [req.params.id]);
+        if (postCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, error: 'Post not found' });
+        }
+
+        // Remove post comments
+        await client.query('DELETE FROM comments WHERE post_id = $1', [req.params.id]);
         // Remove post tags
         await client.query('DELETE FROM post_tags WHERE post_id = $1', [req.params.id]);
+        // Remove post categories
+        await client.query('DELETE FROM post_categories WHERE post_id = $1', [req.params.id]);
         // Remove post
         await client.query('DELETE FROM posts WHERE id = $1', [req.params.id]);
+        
         await client.query('COMMIT');
-        res.json({ success: true });
+        res.json({ success: true, message: 'Post deleted successfully' });
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error(err);
+        console.error('Error deleting post:', err);
         res.status(500).json({ success: false, error: 'Failed to delete post' });
     } finally {
         client.release();
@@ -496,16 +588,26 @@ router.delete('/api/posts/:id', async (req, res) => {
 });
 
 // Comments API endpoints
-router.put('/api/comments/:id/:action', async (req, res) => {
+router.put('/api/comments/:id/:action', upload.none(), async (req, res) => {
     const { id, action } = req.params;
     try {
-        await pool.query(
+        // Validate action
+        if (!['approve', 'unapprove'].includes(action)) {
+            return res.status(400).json({ success: false, error: 'Invalid action' });
+        }
+
+        const result = await pool.query(
             'UPDATE comments SET is_approved = $1 WHERE id = $2',
             [action === 'approve', id]
         );
-        res.json({ success: true });
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Comment not found' });
+        }
+
+        res.json({ success: true, message: `Comment ${action}d successfully` });
     } catch (err) {
-        console.error(err);
+        console.error('Error moderating comment:', err);
         res.status(500).json({ success: false, error: 'Failed to moderate comment' });
     }
 });
@@ -513,39 +615,90 @@ router.put('/api/comments/:id/:action', async (req, res) => {
 // Delete comment
 router.delete('/api/comments/:id', async (req, res) => {
     try {
-        await pool.query('DELETE FROM comments WHERE id = $1', [req.params.id]);
-        res.json({ success: true });
+        const result = await pool.query('DELETE FROM comments WHERE id = $1', [req.params.id]);
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Comment not found' });
+        }
+
+        res.json({ success: true, message: 'Comment deleted successfully' });
     } catch (err) {
-        console.error(err);
+        console.error('Error deleting comment:', err);
         res.status(500).json({ success: false, error: 'Failed to delete comment' });
     }
 });
 
 // Categories API endpoints
-router.post('/api/categories', async (req, res) => {
+router.post('/api/categories', upload.none(), async (req, res) => {
     try {
+        const { name, description } = req.body;
+        
+        if (!name || !name.trim()) {
+            return res.status(400).json({ success: false, error: 'Category name is required' });
+        }
+
+        // Check if category already exists
+        const existing = await pool.query(
+            'SELECT id FROM categories WHERE LOWER(name) = LOWER($1)',
+            [name.trim()]
+        );
+
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ success: false, error: 'Category with this name already exists' });
+        }
+
         await pool.query(
             'INSERT INTO categories (name, description) VALUES ($1, $2)',
-            [req.body.name, req.body.description]
+            [name.trim(), description?.trim() || null]
         );
-        res.json({ success: true });
+        
+        res.json({ success: true, message: 'Category created successfully' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Failed to create category' });
+        console.error('Error creating category:', err);
+        if (err.code === '23505') { // Unique violation
+            res.status(400).json({ success: false, error: 'Category with this name already exists' });
+        } else {
+            res.status(500).json({ success: false, error: 'Failed to create category' });
+        }
     }
 });
 
 // Update category
-router.put('/api/categories/:id', async (req, res) => {
+router.put('/api/categories/:id', upload.none(), async (req, res) => {
     try {
-        await pool.query(
-            'UPDATE categories SET name = $1, description = $2 WHERE id = $3',
-            [req.body.name, req.body.description, req.params.id]
+        const { name, description } = req.body;
+        
+        if (!name || !name.trim()) {
+            return res.status(400).json({ success: false, error: 'Category name is required' });
+        }
+
+        // Check if another category with this name exists
+        const existing = await pool.query(
+            'SELECT id FROM categories WHERE LOWER(name) = LOWER($1) AND id != $2',
+            [name.trim(), req.params.id]
         );
-        res.json({ success: true });
+
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ success: false, error: 'Category with this name already exists' });
+        }
+
+        const result = await pool.query(
+            'UPDATE categories SET name = $1, description = $2 WHERE id = $3',
+            [name.trim(), description?.trim() || null, req.params.id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Category not found' });
+        }
+
+        res.json({ success: true, message: 'Category updated successfully' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Failed to update category' });
+        console.error('Error updating category:', err);
+        if (err.code === '23505') { // Unique violation
+            res.status(400).json({ success: false, error: 'Category with this name already exists' });
+        } else {
+            res.status(500).json({ success: false, error: 'Failed to update category' });
+        }
     }
 });
 
@@ -555,20 +708,28 @@ router.delete('/api/categories/:id', async (req, res) => {
     try {
         // Check if any posts are using this category
         const postCount = await pool.query('SELECT COUNT(*) FROM Post_Categories WHERE category_id = $1', [id]);
-        if (postCount.rows[0].count > 0) {
-            return res.status(400).json({ success: false, error: 'Cannot delete category with associated posts.' });
+        if (parseInt(postCount.rows[0].count) > 0) {
+            return res.status(400).json({ 
+                success: false, 
+                error: `Cannot delete category. It is used by ${postCount.rows[0].count} post(s). Please remove the category from all posts first.`
+            });
         }
 
-        await pool.query('DELETE FROM categories WHERE id = $1', [id]);
-        res.json({ success: true });
+        const result = await pool.query('DELETE FROM categories WHERE id = $1', [id]);
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Category not found' });
+        }
+
+        res.json({ success: true, message: 'Category deleted successfully' });
     } catch (err) {
-        console.error(err);
+        console.error('Error deleting category:', err);
         res.status(500).json({ success: false, error: 'Failed to delete category' });
     }
 });
 
 // Markdown preview endpoint
-router.post('/api/markdown-preview', (req, res) => {
+router.post('/api/markdown-preview', upload.none(), (req, res) => {
     try {
         const { markdown } = req.body;
         if (!markdown) {
@@ -584,34 +745,93 @@ router.post('/api/markdown-preview', (req, res) => {
 });
 
 // Tags API endpoints
-router.post('/api/tags', async (req, res) => {
+router.post('/api/tags', upload.none(), async (req, res) => {
     try {
-        await pool.query('INSERT INTO tags (name) VALUES ($1)', [req.body.name]);
-        res.json({ success: true });
+        const { name } = req.body;
+        
+        if (!name || !name.trim()) {
+            return res.status(400).json({ success: false, error: 'Tag name is required' });
+        }
+
+        const normalizedTagName = name.toLowerCase().trim();
+
+        // Check if tag already exists
+        const existing = await pool.query('SELECT id FROM tags WHERE name = $1', [normalizedTagName]);
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ success: false, error: 'Tag already exists' });
+        }
+
+        await pool.query('INSERT INTO tags (name) VALUES ($1)', [normalizedTagName]);
+        res.json({ success: true, message: 'Tag created successfully' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Failed to create tag' });
+        console.error('Error creating tag:', err);
+        if (err.code === '23505') { // Unique violation
+            res.status(400).json({ success: false, error: 'Tag already exists' });
+        } else {
+            res.status(500).json({ success: false, error: 'Failed to create tag' });
+        }
     }
 });
 
 // Update tag
-router.put('/api/tags/:id', async (req, res) => {
+router.put('/api/tags/:id', upload.none(), async (req, res) => {
     try {
-        await pool.query('UPDATE tags SET name = $1 WHERE id = $2', [req.body.name, req.params.id]);
-        res.json({ success: true });
+        const { name } = req.body;
+        
+        if (!name || !name.trim()) {
+            return res.status(400).json({ success: false, error: 'Tag name is required' });
+        }
+
+        const normalizedTagName = name.toLowerCase().trim();
+
+        // Check if another tag with this name exists
+        const existing = await pool.query('SELECT id FROM tags WHERE name = $1 AND id != $2', [normalizedTagName, req.params.id]);
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ success: false, error: 'Tag already exists' });
+        }
+
+        const result = await pool.query('UPDATE tags SET name = $1 WHERE id = $2', [normalizedTagName, req.params.id]);
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Tag not found' });
+        }
+
+        res.json({ success: true, message: 'Tag updated successfully' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Failed to update tag' });
+        console.error('Error updating tag:', err);
+        if (err.code === '23505') { // Unique violation
+            res.status(400).json({ success: false, error: 'Tag already exists' });
+        } else {
+            res.status(500).json({ success: false, error: 'Failed to update tag' });
+        }
     }
 });
 
 // Delete tag
 router.delete('/api/tags/:id', async (req, res) => {
     try {
-        await pool.query('DELETE FROM tags WHERE id = $1', [req.params.id]);
-        res.json({ success: true });
+        // Check if any posts are using this tag
+        const postCount = await pool.query('SELECT COUNT(*) FROM Post_Tags WHERE tag_id = $1', [req.params.id]);
+        const count = parseInt(postCount.rows[0].count);
+        
+        if (count > 0) {
+            // Remove tag from all posts before deletion
+            await pool.query('DELETE FROM Post_Tags WHERE tag_id = $1', [req.params.id]);
+        }
+
+        const result = await pool.query('DELETE FROM tags WHERE id = $1', [req.params.id]);
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Tag not found' });
+        }
+
+        const message = count > 0 
+            ? `Tag deleted successfully and removed from ${count} post(s)`
+            : 'Tag deleted successfully';
+
+        res.json({ success: true, message });
     } catch (err) {
-        console.error(err);
+        console.error('Error deleting tag:', err);
         res.status(500).json({ success: false, error: 'Failed to delete tag' });
     }
 });
@@ -653,4 +873,155 @@ router.get('/api/download-all-data', async (req, res) => {
         res.status(500).json({ success: false, error: 'Failed to download blog data' });
     }
 });
+
+// Image upload endpoint with enhanced security
+router.post('/api/upload-image', uploadRateLimiter, upload.single('image'), async (req, res) => {
+    const fs = await import('fs');
+    let tempFilePath = null;
+    
+    try {
+        // Authentication check
+        if (!req.session?.user?.username) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        
+        // Role-based authorization
+        if (req.session.user.role !== 'SuperAdmin') {
+            return res.status(403).json({ error: 'Insufficient permissions' });
+        }
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'No image file provided' });
+        }
+
+        const file = req.file;
+        tempFilePath = file.path;
+        
+        // Read file buffer for signature validation
+        const fileBuffer = await fs.default.promises.readFile(tempFilePath);
+        
+        // Validate file signature against declared MIME type
+        if (!validateFileSignature(fileBuffer, file.mimetype)) {
+            await fs.default.promises.unlink(tempFilePath);
+            return res.status(400).json({ error: 'File signature does not match declared type' });
+        }
+        
+        // Additional security checks
+        if (fileBuffer.length !== file.size) {
+            await fs.default.promises.unlink(tempFilePath);
+            return res.status(400).json({ error: 'File size mismatch' });
+        }
+        
+        // Generate secure filename
+        const secureFileName = generateSecureFilename(file.originalname);
+        
+        // Upload to R2 with enhanced metadata
+        const uploadResult = await uploadFile(
+            secureFileName,
+            fileBuffer,
+            file.mimetype,
+            {
+                metadata: {
+                    'original-name': file.originalname,
+                    'uploaded-by': req.session.user.username,
+                    'upload-type': 'blog-preview',
+                    'file-hash': crypto.createHash('sha256').update(fileBuffer).digest('hex'),
+                    'upload-timestamp': new Date().toISOString()
+                }
+            }
+        );
+        
+        // Clean up temp file
+        await fs.default.promises.unlink(tempFilePath);
+
+        // Generate public URL using our local image serving route
+        const publicUrl = `/images/${secureFileName}`;
+        
+        // Log successful upload for audit
+        console.log(`Image uploaded successfully: ${secureFileName} by ${req.session.user.username}`);
+        
+        res.json({
+            success: true,
+            url: publicUrl,
+            key: secureFileName,
+            size: file.size,
+            type: file.mimetype
+        });
+        
+    } catch (err) {
+        // Clean up temp file on error
+        if (tempFilePath) {
+            try {
+                const fs = await import('fs');
+                await fs.default.promises.unlink(tempFilePath);
+            } catch (cleanupErr) {
+                console.error('Error cleaning up temp file:', cleanupErr);
+            }
+        }
+        
+        console.error('Image upload error:', {
+            error: err.message,
+            user: req.session?.user?.username,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Return generic error message
+        res.status(500).json({ error: 'Failed to upload image' });
+    }
+});
+
+// List images specifically for image browser
+router.post('/api/r2/list-images', uploadRateLimiter, upload.none(), async (req, res) => {
+    // Authentication check
+    if (!req.session?.user?.username || req.session.user.role !== 'SuperAdmin') {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+    try {
+        const { prefix = '', searchTerm = '', maxKeys = 20, continuationToken } = req.body;
+        
+        // List files with the specified prefix
+        const filesResult = await listfiles(prefix, {
+            maxKeys: parseInt(maxKeys),
+            continuationToken: continuationToken || undefined
+        });
+
+        // Filter for image files only
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+        let images = (filesResult.Contents || []).filter(file => {
+            if (!file.Key) return false;
+            
+            const isImage = imageExtensions.some(ext => 
+                file.Key.toLowerCase().endsWith(ext)
+            );
+            
+            // Apply search filter if provided
+            if (searchTerm && !file.Key.toLowerCase().includes(searchTerm.toLowerCase())) {
+                return false;
+            }
+            
+            return isImage;
+        });
+
+        // Transform the data for frontend
+        images = images.map(file => ({
+            key: file.Key,
+            size: file.Size,
+            lastModified: file.LastModified,
+            url: `/images/${file.Key}`
+        }));
+
+        res.json({
+            success: true,
+            images: images,
+            hasMore: filesResult.IsTruncated || false,
+            nextToken: filesResult.NextContinuationToken || null,
+            total: images.length
+        });
+
+    } catch (err) {
+        console.error('List images error:', err);
+        res.status(500).json({ error: 'Failed to list images' });
+    }
+});
+
 export default router;

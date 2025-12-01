@@ -406,22 +406,89 @@
     document.getElementById('categoryFilter').addEventListener('change', filterAndSortPosts);
     document.getElementById('sortFilter').addEventListener('change', filterAndSortPosts);
 
+    // Helper functions for notifications
+    function showNotification(message, type = 'success') {
+        const existing = document.querySelector('.notification');
+        if (existing) existing.remove();
+        
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#28a745' : '#dc3545'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+            font-weight: 500;
+        `;
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; margin-left: auto; cursor: pointer; font-size: 1.2rem;">&times;</button>
+            </div>
+        `;
+        
+        if (!document.querySelector('#notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => notification.remove(), 300);
+            }
+        }, 5000);
+    }
+
+    function setLoading(button, isLoading) {
+        const originalHTML = button.dataset.originalHTML || button.innerHTML;
+        if (!button.dataset.originalHTML) {
+            button.dataset.originalHTML = originalHTML;
+        }
+        
+        if (isLoading) {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        } else {
+            button.disabled = false;
+            button.innerHTML = originalHTML;
+        }
+    }
+
     function deletePost(id) {
         if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+            const deleteBtn = event.target.closest('button');
+            setLoading(deleteBtn, true);
+
             fetch(`/dashboard/api/posts/${id}`, {
                 method: 'DELETE'
             })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        window.location.reload();
+                        showNotification('Post deleted successfully!');
+                        setTimeout(() => window.location.reload(), 1500);
                     } else {
-                        alert('Failed to delete post. Please try again.');
+                        showNotification(data.error || 'Failed to delete post', 'error');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('An error occurred while deleting the post.');
+                    showNotification('Network error occurred. Please try again.', 'error');
+                })
+                .finally(() => {
+                    setLoading(deleteBtn, false);
                 });
         }
     }

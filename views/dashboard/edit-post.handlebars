@@ -699,6 +699,341 @@
     input:checked+.slider:before {
         transform: translateX(26px);
     }
+
+    /* Image Upload Styles */
+    .upload-tabs {
+        display: flex;
+        border-bottom: 2px solid var(--border-color);
+        margin-bottom: 1rem;
+    }
+
+    .tab-btn {
+        background: none;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .tab-btn:hover {
+        color: var(--primary-color);
+        background-color: rgba(33, 150, 243, 0.1);
+    }
+
+    .tab-btn.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+        background-color: rgba(33, 150, 243, 0.1);
+    }
+
+    .tab-content {
+        transition: opacity 0.3s ease;
+    }
+
+    .upload-area {
+        border: 2px dashed var(--border-color);
+        border-radius: 8px;
+        padding: 3rem 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-color: rgba(33, 150, 243, 0.05);
+    }
+
+    .upload-area:hover {
+        border-color: var(--primary-color);
+        background-color: rgba(33, 150, 243, 0.1);
+    }
+
+    .upload-area.dragover {
+        border-color: var(--primary-color);
+        background-color: rgba(33, 150, 243, 0.15);
+        transform: scale(1.02);
+    }
+
+    .upload-placeholder i {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .upload-placeholder p {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .upload-progress {
+        background-color: var(--light);
+        border-radius: 20px;
+        height: 8px;
+        position: relative;
+        overflow: hidden;
+        margin-top: 1rem;
+    }
+
+    .upload-progress .progress-bar {
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary));
+        height: 100%;
+        border-radius: 20px;
+        transition: width 0.3s ease;
+        width: 0%;
+    }
+
+    .upload-progress .progress-text {
+        position: absolute;
+        top: -25px;
+        right: 0;
+        font-size: 0.9rem;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .upload-status {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border-radius: 6px;
+        font-size: 0.95rem;
+    }
+
+    .upload-status.success {
+        background-color: rgba(40, 167, 69, 0.1);
+        border: 1px solid var(--success-color);
+        color: var(--success-color);
+    }
+
+    .upload-status.error {
+        background-color: rgba(220, 53, 69, 0.1);
+        border: 1px solid var(--danger-color);
+        color: var(--danger-color);
+    }
+
+    .preview-image-container .preview-image {
+        max-width: 300px;
+        max-height: 200px;
+        border-radius: 8px;
+        box-shadow: var(--box-shadow);
+    }
+
+    @media (max-width: 768px) {
+        .upload-area {
+            padding: 2rem 1rem;
+        }
+
+        .upload-placeholder p {
+            font-size: 1rem;
+        }
+
+        .tab-btn {
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+        }
+    }
+
+    /* Image Browser Styles */
+    .image-browser {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--darker);
+    }
+
+    .browser-header {
+        padding: 1rem;
+        background: var(--dark);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: var(--darker);
+        color: var(--text);
+        font-size: 0.9rem;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+    }
+
+    .refresh-btn {
+        padding: 0.5rem 1rem;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.3s ease;
+    }
+
+    .refresh-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    .image-grid {
+        padding: 1rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 1rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .image-item {
+        position: relative;
+        aspect-ratio: 1;
+        border: 2px solid transparent;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: var(--dark);
+    }
+
+    .image-item:hover {
+        border-color: var(--primary-color);
+        transform: scale(1.05);
+    }
+
+    .image-item.selected {
+        border-color: var(--success-color);
+        box-shadow: 0 0 0 3px rgba(67, 233, 123, 0.3);
+    }
+
+    .image-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .image-item .image-name {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+        color: white;
+        padding: 0.5rem 0.3rem 0.3rem;
+        font-size: 0.75rem;
+        word-break: break-all;
+        line-height: 1.2;
+    }
+
+    .loading-spinner {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+
+    .loading-spinner i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+    }
+
+    .browser-pagination {
+        padding: 1rem;
+        text-align: center;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .load-more-btn {
+        padding: 0.75rem 1.5rem;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.3s ease;
+    }
+
+    .load-more-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    .load-more-btn:disabled {
+        background: var(--text-muted);
+        cursor: not-allowed;
+    }
+
+    /* Custom Modal Styles (replacing Bootstrap) */
+    .custom-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 10000;
+        backdrop-filter: blur(5px);
+    }
+
+    .custom-modal.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: var(--dark);
+        border-radius: 8px;
+        max-width: 90%;
+        max-height: 90%;
+        overflow: auto;
+        position: relative;
+    }
+
+    .modal-header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        margin: 0;
+        color: var(--text);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        color: var(--text);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-close:hover {
+        color: var(--danger-color);
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
 </style>
 {{/section}}
 
@@ -726,20 +1061,79 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">Preview Image URL</label>
+            <label class="form-label">Preview Image</label>
             <div class="preview-image-container">
                 {{#if post.preview_image}}
                 <div class="current-preview mb-3">
                     <img src="{{post.preview_image}}" alt="Current preview" class="preview-image">
                 </div>
                 {{/if}}
-                <div class="preview-url-input">
-                    <input type="url" id="previewImage" name="preview_image" class="form-control"
-                        placeholder="Enter image URL" value="{{post.preview_image}}" onchange="previewImageUrl(this)">
-                    <small class="text-muted">Enter a valid image URL (https://example.com/image.jpg)</small>
+                
+                {{! Image Upload Tab Navigation }}
+                <div class="upload-tabs mb-3">
+                    <button type="button" class="tab-btn active" data-tab="url" onclick="switchImageTab('url')">
+                        <i class="fas fa-link"></i> URL
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="upload" onclick="switchImageTab('upload')">
+                        <i class="fas fa-upload"></i> Upload
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="browse" onclick="switchImageTab('browse')">
+                        <i class="fas fa-images"></i> Browse
+                    </button>
                 </div>
+
+                {{! URL Input Tab }}
+                <div id="urlTab" class="tab-content active">
+                    <div class="preview-url-input">
+                        <input type="url" id="previewImage" name="preview_image" class="form-control"
+                            placeholder="Enter image URL" value="{{post.preview_image}}" onchange="previewImageUrl(this)">
+                        <small class="text-muted">Enter a valid image URL (https://example.com/image.jpg)</small>
+                    </div>
+                </div>
+
+                {{! Upload Tab }}
+                <div id="uploadTab" class="tab-content" style="display: none;">
+                    <div class="upload-area" onclick="document.getElementById('imageUpload').click()">
+                        <input type="file" id="imageUpload" name="image" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+                        <div class="upload-placeholder">
+                            <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                            <p>Click to select an image or drag and drop</p>
+                            <small class="text-muted">Max size: 20MB • JPG, PNG, GIF, WebP only • Files are validated for security</small>
+                        </div>
+                        <div id="uploadProgress" class="upload-progress" style="display: none;">
+                            <div class="progress-bar"></div>
+                            <span class="progress-text">0%</span>
+                        </div>
+                    </div>
+                    <div id="uploadStatus" class="upload-status"></div>
+                </div>
+
+                {{! Browse Images Tab }}
+                <div id="browseTab" class="tab-content" style="display: none;">
+                    <div class="image-browser">
+                        <div class="browser-header">
+                            <input type="text" id="imageSearch" placeholder="Search images..." class="search-input">
+                            <button type="button" id="refreshImages" class="refresh-btn">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                        <div id="imageGrid" class="image-grid">
+                            <div class="loading-spinner">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Loading images...</p>
+                            </div>
+                        </div>
+                        <div class="browser-pagination">
+                            <button type="button" id="loadMoreImages" class="load-more-btn" style="display: none;">
+                                Load More Images
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{! Image Preview }}
                 <div id="imagePreview" class="mt-3" style="display: none;">
-                    <img src="" alt="URL preview" class="preview-image">
+                    <img src="" alt="Image preview" class="preview-image">
                 </div>
             </div>
         </div>
@@ -860,6 +1254,18 @@
 {{#section 'scripts'}}
 <script>
     (function () {
+        // Store original values for change detection
+        {{#if post}}
+        const originalPostData = {
+            title: {{#if post.title}}{{{jsonStringify post.title}}}{{else}}''{{/if}},
+            content: {{{jsonStringify post.content_markdown}}},
+            excerpt: {{#if post.excerpt}}{{{jsonStringify post.excerpt}}}{{else}}''{{/if}},
+            preview_image: {{#if post.preview_image}}{{{jsonStringify post.preview_image}}}{{else}}''{{/if}},
+            status: '{{post.status}}',
+            categories: [{{#each post.categoryIds}}{{this}}{{#unless @last}},{{/unless}}{{/each}}],
+            tags: [{{#each post.tags}}{{{jsonStringify this}}}{{#unless @last}},{{/unless}}{{/each}}]
+        };
+        {{/if}}
         const tagContainer = document.getElementById('tagContainer');
         const form = document.getElementById('editPostForm');
 
@@ -1090,7 +1496,7 @@
                     if (currentPreview) {
                         currentPreview.style.display = 'block';
                     }
-                    alert('Invalid image URL or image not accessible');
+                    showNotification('Invalid image URL or image not accessible', 'error');
                 };
             } else {
                 imagePreview.style.display = 'none';
@@ -1099,6 +1505,328 @@
                 }
             }
         };
+
+        // Image upload functionality
+        window.switchImageTab = function(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            document.getElementById(tabName + 'Tab').style.display = 'block';
+
+            // Load images when browse tab is activated
+            if (tabName === 'browse') {
+                loadBucketImages();
+            }
+        };
+
+        let currentImages = [];
+        let hasMoreImages = false;
+        let nextToken = null;
+
+        function loadBucketImages(searchTerm = '', loadMore = false) {
+            const imageGrid = document.getElementById('imageGrid');
+            
+            if (!loadMore) {
+                imageGrid.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><p>Loading images...</p></div>';
+                currentImages = [];
+                nextToken = null;
+            }
+
+            // Build query parameters
+            const params = new URLSearchParams({
+                prefix: 'blog-images/',
+                limit: 20
+            });
+
+            if (nextToken) {
+                params.append('startAfter', nextToken);
+            }
+
+            fetch(`/dashboard/r2-admin?${params.toString()}`)
+                .then(response => response.text())
+                .then(html => {
+                    // Parse the HTML response to extract file data
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // This is a simplified approach - in production, you'd want a proper API endpoint
+                    // For now, let's use the R2 API directly
+                    return fetch('/dashboard/api/r2/list-images', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            prefix: 'blog-images/',
+                            searchTerm: searchTerm,
+                            maxKeys: 20,
+                            continuationToken: nextToken 
+                        })
+                    });
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderImages(data.images, loadMore);
+                        hasMoreImages = data.hasMore;
+                        nextToken = data.nextToken;
+                        
+                        const loadMoreBtn = document.getElementById('loadMoreImages');
+                        loadMoreBtn.style.display = hasMoreImages ? 'block' : 'none';
+                    } else {
+                        throw new Error(data.error || 'Failed to load images');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading images:', error);
+                    imageGrid.innerHTML = '<div class="loading-spinner"><p>Error loading images. Please try again.</p></div>';
+                });
+        }
+
+        function renderImages(images, append = false) {
+            const imageGrid = document.getElementById('imageGrid');
+            
+            if (!append) {
+                imageGrid.innerHTML = '';
+                currentImages = [];
+            }
+
+            images.forEach(image => {
+                if (isImageFile(image.key)) {
+                    currentImages.push(image);
+                    const imageItem = createImageItem(image);
+                    imageGrid.appendChild(imageItem);
+                }
+            });
+
+            if (currentImages.length === 0 && !append) {
+                imageGrid.innerHTML = '<div class="loading-spinner"><p>No images found</p></div>';
+            }
+        }
+
+        function createImageItem(image) {
+            const item = document.createElement('div');
+            item.className = 'image-item';
+            item.dataset.key = image.key;
+            
+            const img = document.createElement('img');
+            img.src = `https://blog.mbktech.org/images/${image.key}`;
+            img.alt = image.key;
+            img.loading = 'lazy';
+            
+            const name = document.createElement('div');
+            name.className = 'image-name';
+            name.textContent = image.key.split('/').pop();
+            
+            item.appendChild(img);
+            item.appendChild(name);
+            
+            item.addEventListener('click', () => selectImage(image.key, item));
+            
+            return item;
+        }
+
+        function selectImage(key, element) {
+            // Remove previous selection
+            document.querySelectorAll('.image-item.selected').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Select current item
+            element.classList.add('selected');
+            
+            // Update the preview image URL
+            const imageUrl = `https://blog.mbktech.org/images/${key}`;
+            document.getElementById('previewImage').value = imageUrl;
+            previewImageUrl(document.getElementById('previewImage'));
+            
+            // Switch back to URL tab to show the result
+            switchImageTab('url');
+            
+            showUploadStatus(`Selected: ${key.split('/').pop()}`, 'success');
+        }
+
+        function isImageFile(filename) {
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+            return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+        }
+
+        // Image search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('imageSearch');
+            const refreshBtn = document.getElementById('refreshImages');
+            const loadMoreBtn = document.getElementById('loadMoreImages');
+
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        loadBucketImages(this.value);
+                    }, 500);
+                });
+            }
+
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', () => {
+                    loadBucketImages(searchInput ? searchInput.value : '');
+                });
+            }
+
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', () => {
+                    loadBucketImages(searchInput ? searchInput.value : '', true);
+                });
+            }
+        });
+
+        window.handleImageUpload = function(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Validate file type - be more specific
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type.toLowerCase())) {
+                showUploadStatus('Please select a valid image file (JPG, PNG, GIF, or WebP only).', 'error');
+                input.value = '';
+                return;
+            }
+            
+            // Validate filename length
+            if (file.name.length > 255) {
+                showUploadStatus('Filename is too long. Please rename the file.', 'error');
+                input.value = '';
+                return;
+            }
+
+            // Validate file size (20MB)
+            if (file.size > 20 * 1024 * 1024) {
+                showUploadStatus('File size must be less than 20MB.', 'error');
+                input.value = '';
+                return;
+            }
+            
+            // Additional client-side checks
+            if (file.size === 0) {
+                showUploadStatus('File appears to be empty.', 'error');
+                input.value = '';
+                return;
+            }
+
+            // Show upload progress
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = uploadProgress.querySelector('.progress-bar');
+            const progressText = uploadProgress.querySelector('.progress-text');
+            
+            uploadProgress.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Upload using XMLHttpRequest for progress tracking
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percentComplete + '%';
+                    progressText.textContent = percentComplete + '%';
+                }
+            });
+
+            xhr.addEventListener('load', function() {
+                uploadProgress.style.display = 'none';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        // Update the preview image URL input
+                        document.getElementById('previewImage').value = response.url;
+                        // Trigger preview update
+                        previewImageUrl(document.getElementById('previewImage'));
+                        // Switch back to URL tab to show the result
+                        switchImageTab('url');
+                        showUploadStatus(`Image uploaded successfully! Size: ${formatBytes(response.size)}`, 'success');
+                    } else {
+                        showUploadStatus('Upload failed: ' + (response.error || 'Unknown error'), 'error');
+                    }
+                } catch (e) {
+                    showUploadStatus('Upload failed: Invalid server response', 'error');
+                }
+                // Clear file input
+                input.value = '';
+            });
+
+            xhr.addEventListener('error', function() {
+                uploadProgress.style.display = 'none';
+                showUploadStatus('Upload failed: Network error', 'error');
+                input.value = '';
+            });
+
+            xhr.open('POST', '/dashboard/api/upload-image');
+            xhr.send(formData);
+        };
+
+        function showUploadStatus(message, type) {
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `upload-status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            // Hide after 5 seconds for success, keep for errors
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Drag and drop functionality for upload area
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.querySelector('.upload-area');
+            const imageUploadInput = document.getElementById('imageUpload');
+
+            if (uploadArea) {
+                uploadArea.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.classList.remove('dragover');
+
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        imageUploadInput.files = files;
+                        handleImageUpload(imageUploadInput);
+                    }
+                });
+            }
+        });
 
         // Handle markdown preview
         const previewBtn = document.getElementById('previewBtn');
@@ -1268,8 +1996,304 @@
         });
 
         if (form) {
+            // Helper functions for notifications
+            function showNotification(message, type = 'success') {
+                const existing = document.querySelector('.notification');
+                if (existing) existing.remove();
+                
+                const notification = document.createElement('div');
+                notification.className = `notification notification-${type}`;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: ${type === 'success' ? '#28a745' : '#dc3545'};
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: 6px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    z-index: 10000;
+                    animation: slideIn 0.3s ease;
+                    max-width: 400px;
+                    font-weight: 500;
+                `;
+                notification.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                        <span>${message}</span>
+                        <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; margin-left: auto; cursor: pointer; font-size: 1.2rem;">&times;</button>
+                    </div>
+                `;
+                
+                if (!document.querySelector('#notification-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'notification-styles';
+                    style.textContent = `@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`;
+                    document.head.appendChild(style);
+                }
+                
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.style.animation = 'slideIn 0.3s ease reverse';
+                        setTimeout(() => notification.remove(), 300);
+                    }
+                }, 5000);
+            }
+
+            function setSubmitButtonLoading(isLoading) {
+                const saveBtn = form.querySelector('button[type="submit"]');
+                const originalText = saveBtn.dataset.originalText || saveBtn.textContent;
+                if (!saveBtn.dataset.originalText) {
+                    saveBtn.dataset.originalText = originalText;
+                }
+                
+                if (isLoading) {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                } else {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = originalText;
+                }
+            }
+
+            // Change detection functions
+            function getCurrentPostData() {
+                const selectedCategoryElements = Array.from(categoryContainer.getElementsByClassName('category'));
+                const selectedCategories = selectedCategoryElements
+                    .map(el => parseInt(el.getAttribute('data-category-id'), 10))
+                    .filter(id => !isNaN(id));
+
+                const tags = Array.from(tagContainer.getElementsByClassName('tag'))
+                    .map(tag => tag.textContent.trim().replace('×', '').trim())
+                    .filter(tag => tag.length > 0);
+
+                return {
+                    title: form.querySelector('#title').value.trim(),
+                    content: form.querySelector('#content').value.trim(),
+                    excerpt: form.querySelector('#excerpt').value.trim(),
+                    preview_image: form.querySelector('#previewImage').value.trim(),
+                    status: form.querySelector('select[name="status"]').value,
+                    categories: selectedCategories.sort(),
+                    tags: tags.sort()
+                };
+            }
+
+            function detectChanges() {
+                {{#unless post}}
+                return { hasChanges: true, changes: [] }; // New post, always has changes
+                {{/unless}}
+                {{#if post}}
+                const current = getCurrentPostData();
+                const changes = [];
+
+                // Check each field for changes
+                if (current.title !== originalPostData.title) {
+                    changes.push({
+                        field: 'Title',
+                        from: originalPostData.title,
+                        to: current.title
+                    });
+                }
+
+                if (current.content !== originalPostData.content) {
+                    changes.push({
+                        field: 'Content',
+                        from: `${originalPostData.content.length} characters`,
+                        to: `${current.content.length} characters`
+                    });
+                }
+
+                if (current.excerpt !== originalPostData.excerpt) {
+                    changes.push({
+                        field: 'Excerpt',
+                        from: originalPostData.excerpt || '(empty)',
+                        to: current.excerpt || '(empty)'
+                    });
+                }
+
+                if (current.preview_image !== originalPostData.preview_image) {
+                    changes.push({
+                        field: 'Preview Image',
+                        from: originalPostData.preview_image || '(none)',
+                        to: current.preview_image || '(none)'
+                    });
+                }
+
+                if (current.status !== originalPostData.status) {
+                    changes.push({
+                        field: 'Status',
+                        from: originalPostData.status,
+                        to: current.status
+                    });
+                }
+
+                // Check categories
+                const originalCategories = originalPostData.categories.sort();
+                const currentCategories = current.categories.sort();
+                if (JSON.stringify(originalCategories) !== JSON.stringify(currentCategories)) {
+                    changes.push({
+                        field: 'Categories',
+                        from: `${originalCategories.length} selected`,
+                        to: `${currentCategories.length} selected`
+                    });
+                }
+
+                // Check tags
+                const originalTags = originalPostData.tags.sort();
+                const currentTags = current.tags.sort();
+                if (JSON.stringify(originalTags) !== JSON.stringify(currentTags)) {
+                    changes.push({
+                        field: 'Tags',
+                        from: originalTags.join(', ') || '(none)',
+                        to: currentTags.join(', ') || '(none)'
+                    });
+                }
+
+                return {
+                    hasChanges: changes.length > 0,
+                    changes: changes
+                };
+                {{/if}}
+            }
+
+            function showChangesModal(changes, onConfirm, onCancel) {
+                // Remove existing modal
+                const existingModal = document.querySelector('.changes-modal');
+                if (existingModal) existingModal.remove();
+
+                const modal = document.createElement('div');
+                modal.className = 'changes-modal';
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.7);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10001;
+                    animation: fadeIn 0.3s ease;
+                `;
+
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = `
+                    background: var(--dark);
+                    border-radius: 8px;
+                    padding: 2rem;
+                    max-width: 500px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                    border: 1px solid rgba(255,255,255,0.1);
+                `;
+
+                let changesHtml = '';
+                changes.forEach(change => {
+                    const fromText = change.from.length > 50 ? change.from.substring(0, 50) + '...' : change.from;
+                    const toText = change.to.length > 50 ? change.to.substring(0, 50) + '...' : change.to;
+                    changesHtml += `
+                        <div style="margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                            <strong style="color: var(--accent);">${change.field}</strong><br>
+                            <span style="color: var(--text-light); font-size: 0.9rem;">
+                                From: <em style="color: #ff7675;">${fromText}</em><br>
+                                To: <em style="color: #00b894;">${toText}</em>
+                            </span>
+                        </div>
+                    `;
+                });
+
+                modalContent.innerHTML = `
+                    <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+                        <i class="fas fa-edit" style="color: var(--accent); margin-right: 0.5rem;"></i>
+                        <h3 style="color: var(--light); margin: 0;">Confirm Changes</h3>
+                    </div>
+                    <p style="color: var(--text-light); margin-bottom: 1.5rem;">
+                        You have made changes to ${changes.length} field${changes.length > 1 ? 's' : ''}. Please review before saving:
+                    </p>
+                    <div style="margin-bottom: 2rem;">
+                        ${changesHtml}
+                    </div>
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button class="btn btn-secondary" onclick="this.closest('.changes-modal').remove(); if(typeof arguments[0] === 'function') arguments[0]();" 
+                                style="padding: 0.75rem 1.5rem;">Cancel</button>
+                        <button class="btn btn-primary" onclick="this.closest('.changes-modal').remove(); if(typeof arguments[1] === 'function') arguments[1]();" 
+                                style="padding: 0.75rem 1.5rem;">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                `;
+
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+
+                // Add click handlers
+                const cancelBtn = modal.querySelector('.btn-secondary');
+                const saveBtn = modal.querySelector('.btn-primary');
+                
+                cancelBtn.onclick = () => {
+                    modal.remove();
+                    if (onCancel) onCancel();
+                };
+                
+                saveBtn.onclick = () => {
+                    modal.remove();
+                    if (onConfirm) onConfirm();
+                };
+
+                // Close on background click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                        if (onCancel) onCancel();
+                    }
+                });
+
+                // Add fade in animation style if not exists
+                if (!document.querySelector('#changes-modal-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'changes-modal-styles';
+                    style.textContent = `
+                        @keyframes fadeIn {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                
+                // Check for changes first (only for existing posts)
+                {{#if post}}
+                const changeDetection = detectChanges();
+                
+                if (!changeDetection.hasChanges) {
+                    showNotification('No changes detected. Nothing to save.', 'info');
+                    return;
+                }
+
+                // Show changes confirmation modal
+                showChangesModal(changeDetection.changes, async () => {
+                    // User confirmed, proceed with save
+                    await submitForm();
+                }, () => {
+                    // User cancelled, do nothing
+                    showNotification('Save cancelled', 'info');
+                });
+                {{else}}
+                // New post, proceed directly
+                await submitForm();
+                {{/if}}
+            });
+
+            async function submitForm() {
+                setSubmitButtonLoading(true);
 
                 try {
                     // Get selected categories from the category container
@@ -1280,8 +2304,9 @@
 
                     // Validate that at least one category is selected
                     if (selectedCategories.length === 0) {
-                        alert('Please select at least one category for the post');
+                        showNotification('Please select at least one category for the post', 'error');
                         categoryContainer.focus();
+                        setSubmitButtonLoading(false);
                         return;
                     }
 
@@ -1304,20 +2329,28 @@
 
                     const response = await fetch('{{#if post}}/dashboard/api/posts/{{post.id}}{{else}}/dashboard/api/posts{{/if}}', {
                         method: '{{#if post}}PUT{{else}}POST{{/if}}',
-                        body: formData
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams(formData)
                     });
 
-                    if (response.ok) {
-                        window.location.href = '/dashboard/posts';
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        showNotification('{{#if post}}Post updated successfully!{{else}}Post created successfully!{{/if}}');
+                        setTimeout(() => {
+                            window.location.href = '/dashboard/posts';
+                        }, 1500);
                     } else {
-                        const error = await response.json();
-                        alert(error.message || 'Failed to save post');
+                        showNotification(data.error || data.message || 'Failed to save post', 'error');
+                        setSubmitButtonLoading(false);
                     }
                 } catch (err) {
                     console.error('Error saving post:', err);
-                    alert('An error occurred while saving the post');
+                    showNotification('Network error occurred. Please try again.', 'error');
+                    setSubmitButtonLoading(false);
                 }
-            });
+            }
         }
     })();
 </script>

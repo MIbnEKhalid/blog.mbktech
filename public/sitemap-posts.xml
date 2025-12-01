@@ -4,13 +4,7 @@
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
     <url>
         <loc>https://blog.mbktech.org/post/how-i-almost-exposed-my-own-blog-dashboard-yes-this-one</loc>
-        <lastmod>2025-11-03</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
-    </url>
-    <url>
-        <loc>https://blog.mbktech.org/post/smart-hydroponic-fodder-cultivation-and-monitoring-system</loc>
-        <lastmod>2025-11-01</lastmod>
+        <lastmod>2025-12-01</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>

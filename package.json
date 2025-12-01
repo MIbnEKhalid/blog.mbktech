@@ -12,6 +12,8 @@
   "author": "Muhammad Bin Khalid",
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.940.0",
+    "@aws-sdk/s3-request-presigner": "^3.940.0",
     "compression": "^1.8.0",
     "cookie-parser": "^1.4.7",
     "dompurify": "^3.3.0",

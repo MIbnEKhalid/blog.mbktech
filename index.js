@@ -266,6 +266,23 @@ server.engine("handlebars", engine({
         result.push(i);
       }
       return result;
+    },
+    isImage: function (filename) {
+      if (!filename || typeof filename !== 'string') return false;
+      const ext = path.extname(filename).toLowerCase();
+      return ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'].includes(ext);
+    },
+    formatBytes: function (bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+    getFileExtension: function (filename) {
+      if (!filename) return 'unknown';
+      const ext = path.extname(filename);
+      return ext ? ext.substring(1).toUpperCase() : 'UNKNOWN';
     }
   }
 }));
